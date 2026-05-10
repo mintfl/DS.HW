@@ -13,27 +13,41 @@
 <ul id="list"></ul>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 <script>
-const supabase = supabase.createClient(
-"https://rdjnflniomehmkdzowzv.supabase.co",
-"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkam5mbG5pb21laG1rZHpvd3p2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MTI1ODMsImV4cCI6MjA5Mzk4ODU4M30.FtUJP2oeeoJHU7tnkbJUrdq_laSg2pHndefnW5RQYWk"
-);
+// 1. Change the name here to avoid the error
+const supabaseClient = supabase.createClient("https://rdjnflniomehmkdzowzv.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkam5mbG5pb21laG1rZHpvd3p2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MTI1ODMsImV4cCI6MjA5Mzk4ODU4M30.FtUJP2oeeoJHU7tnkbJUrdq_laSg2pHndefnW5RQYWk");
+
 async function addStudent() {
-const name = document.getElementById("name").value;
-const email = document.getElementById("email").value;
-const course = document.getElementById("course").value;
-await supabase.from("students").insert([{ name, email, course }]);
-loadStudents();
+  const name = document.getElementById("name").value;
+  const email = document.getElementById("email").value;
+  const course = document.getElementById("course").value;
+
+  // 2. Use the new name "supabaseClient" here
+  await supabaseClient.from("students").insert([{ name, email, course }]);
+  
+  loadStudents();
 }
+
 async function loadStudents() {
-const { data } = await supabase.from("students").select("*");
-const list = document.getElementById("list");
-list.innerHTML = "";
-data.forEach(s => {
-const li = document.createElement("li");
-li.innerText = s.name + " - " + s.course;
-list.appendChild(li);
-});
+  // 3. Use the new name "supabaseClient" here too
+  const { data, error } = await supabaseClient.from("students").select("*");
+  
+  if (error) {
+    console.error("Error fetching students:", error);
+    return;
+  }
+
+  const list = document.getElementById("list");
+  list.innerHTML = "";
+  
+  if (data) {
+    data.forEach(s => {
+      const li = document.createElement("li");
+      li.innerText = s.name + " - " + s.course;
+      list.appendChild(li);
+    });
+  }
 }
+
 loadStudents();
 </script>
 </body>
