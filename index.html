@@ -29,6 +29,7 @@
         <th>Name</th>
         <th>Email</th>
         <th>Course</th>
+        <th>Actions</th>
       </tr>
     </thead>
     <tbody id="studentTableBody">
@@ -38,10 +39,13 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   
   <script>
+    // Replace with your actual Supabase credentials
     const supabaseClient = supabase.createClient("https://rdjnflniomehmkdzowzv.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkam5mbG5pb21laG1rZHpvd3p2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MTI1ODMsImV4cCI6MjA5Mzk4ODU4M30.FtUJP2oeeoJHU7tnkbJUrdq_laSg2pHndefnW5RQYWk");
 
+    // Automatically load data when the page opens
     window.onload = loadStudents;
 
+    // 1. ADD STUDENT RECORD
     async function addStudent() {
       const name = document.getElementById("name").value;
       const email = document.getElementById("email").value;
@@ -51,18 +55,16 @@
         return;
       }
 
-      // Inserts student with no course assigned yet
       await supabaseClient
         .from("students")
         .insert([{ name, email, course: null }]);
 
-      // Clear input fields and refresh UI
       document.getElementById("name").value = "";
       document.getElementById("email").value = "";
       loadStudents();
     }
 
-    // 2. REGISTER COURSE
+    // 2. REGISTER COURSE (Quick assignment via dropdown)
     async function registerCourse() {
       const studentId = document.getElementById("studentSelect").value;
       const courseName = document.getElementById("courseName").value;
@@ -72,18 +74,45 @@
         return;
       }
 
-      // Updates the existing student record with the course name
       await supabaseClient
         .from("students")
         .update({ course: courseName })
-        .eq("id", studentId); // Assumes your table's primary key is named 'id'
+        .eq("id", studentId); 
 
-      // Clear input field and refresh UI
       document.getElementById("courseName").value = "";
       loadStudents();
     }
 
-    // 3. VIEW STUDENT LIST & POPULATE DROPDOWN
+    // 3. UPDATE COURSE DIALOG (Triggered from Table Row)
+    async function updateCourse(studentId, currentCourse) {
+      const newCourse = prompt("Enter new course name:", currentCourse || "");
+      
+      // If user cancels or types nothing, do nothing
+      if (newCourse === null) return;
+
+      await supabaseClient
+        .from("students")
+        .update({ course: newCourse || null }) // Sets to null if string is empty
+        .eq("id", studentId);
+
+      loadStudents();
+    }
+
+    // 4. DELETE RECORD (Triggered from Table Row)
+    async function deleteStudent(studentId, studentName) {
+      const confirmDelete = confirm(`Are you sure you want to delete ${studentName}?`);
+      
+      if (!confirmDelete) return;
+
+      await supabaseClient
+        .from("students")
+        .delete()
+        .eq("id", studentId);
+
+      loadStudents();
+    }
+
+    // 5. VIEW STUDENT LIST & POPULATE ELEMENTS
     async function loadStudents() {
       const { data, error } = await supabaseClient
         .from("students")
@@ -103,12 +132,16 @@
 
       if (data) {
         data.forEach(s => {
-          // Add row to the HTML Table
+          // Add row to the HTML Table with explicit Update and Delete actions passed via row ID
           const row = document.createElement("tr");
           row.innerHTML = `
             <td>${s.name}</td>
             <td>${s.email}</td>
             <td>${s.course ? s.course : "<em>Not Registered</em>"}</td>
+            <td>
+              <button onclick="updateCourse(${s.id}, '${s.course || ''}')">Update Course</button>
+              <button onclick="deleteStudent(${s.id}, '${s.name}')">Delete</button>
+            </td>
           `;
           tableBody.appendChild(row);
 
