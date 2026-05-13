@@ -1,54 +1,125 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>Student System</title>
+  <meta charset="UTF-8">
+  <title>Student System</title>
 </head>
 <body>
-<h2>Add Student</h2>
-<input id="name" placeholder="Name">
-<input id="email" placeholder="Email">
-<input id="course" placeholder="Course">
-<button onclick="addStudent()">Add</button>
-<h2>Student List</h2>
-<ul id="list"></ul>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-<script>
-// 1. Change the name here to avoid the error
-const supabaseClient = supabase.createClient("https://rdjnflniomehmkdzowzv.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkam5mbG5pb21laG1rZHpvd3p2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MTI1ODMsImV4cCI6MjA5Mzk4ODU4M30.FtUJP2oeeoJHU7tnkbJUrdq_laSg2pHndefnW5RQYWk");
 
-async function addStudent() {
-  const name = document.getElementById("name").value;
-  const email = document.getElementById("email").value;
-  const course = document.getElementById("course").value;
+  <h2>Add New Student</h2>
+  <input id="name" placeholder="Name">
+  <input id="email" placeholder="Email">
+  <button onclick="addStudent()">Add Student</button>
 
-  // 2. Use the new name "supabaseClient" here
-  await supabaseClient.from("students").insert([{ name, email, course }]);
+  <hr>
+
+  <h2>Register Course for Student</h2>
+  <select id="studentSelect">
+    <option value="">-- Select a Student --</option>
+  </select>
+  <input id="courseName" placeholder="Course Name">
+  <button onclick="registerCourse()">Register Course</button>
+
+  <hr>
+
+  <h2>Registered Students & Courses</h2>
+  <table border="1" cellpadding="5" cellspacing="0">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Course</th>
+      </tr>
+    </thead>
+    <tbody id="studentTableBody">
+      </tbody>
+  </table>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   
-  loadStudents();
-}
+  <script>
+    const supabaseClient = supabase.createClient("my URL", "my anon");
 
-async function loadStudents() {
-  // 3. Use the new name "supabaseClient" here too
-  const { data, error } = await supabaseClient.from("students").select("*");
-  
-  if (error) {
-    console.error("Error fetching students:", error);
-    return;
-  }
+    window.onload = loadStudents;
 
-  const list = document.getElementById("list");
-  list.innerHTML = "";
-  
-  if (data) {
-    data.forEach(s => {
-      const li = document.createElement("li");
-      li.innerText = s.name + " - " + s.course;
-      list.appendChild(li);
-    });
-  }
-}
+    async function addStudent() {
+      const name = document.getElementById("name").value;
+      const email = document.getElementById("email").value;
 
-loadStudents();
-</script>
+      if (!name || !email) {
+        alert("Please fill in both name and email.");
+        return;
+      }
+
+      // Inserts student with no course assigned yet
+      await supabaseClient
+        .from("students")
+        .insert([{ name, email, course: null }]);
+
+      // Clear input fields and refresh UI
+      document.getElementById("name").value = "";
+      document.getElementById("email").value = "";
+      loadStudents();
+    }
+
+    // 2. REGISTER COURSE
+    async function registerCourse() {
+      const studentId = document.getElementById("studentSelect").value;
+      const courseName = document.getElementById("courseName").value;
+
+      if (!studentId || !courseName) {
+        alert("Please select a student and enter a course name.");
+        return;
+      }
+
+      // Updates the existing student record with the course name
+      await supabaseClient
+        .from("students")
+        .update({ course: courseName })
+        .eq("id", studentId); // Assumes your table's primary key is named 'id'
+
+      // Clear input field and refresh UI
+      document.getElementById("courseName").value = "";
+      loadStudents();
+    }
+
+    // 3. VIEW STUDENT LIST & POPULATE DROPDOWN
+    async function loadStudents() {
+      const { data, error } = await supabaseClient
+        .from("students")
+        .select("*");
+      
+      if (error) {
+        console.error("Error fetching students:", error);
+        return;
+      }
+
+      const tableBody = document.getElementById("studentTableBody");
+      const studentSelect = document.getElementById("studentSelect");
+
+      // Reset existing content
+      tableBody.innerHTML = "";
+      studentSelect.innerHTML = '<option value="">-- Select a Student --</option>';
+
+      if (data) {
+        data.forEach(s => {
+          // Add row to the HTML Table
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${s.name}</td>
+            <td>${s.email}</td>
+            <td>${s.course ? s.course : "<em>Not Registered</em>"}</td>
+          `;
+          tableBody.appendChild(row);
+
+          // Add option to the Dropdown Menu for registration
+          const option = document.createElement("option");
+          option.value = s.id; 
+          option.innerText = s.name;
+          studentSelect.appendChild(option);
+        });
+      }
+    }
+  </script>
 </body>
 </html>
